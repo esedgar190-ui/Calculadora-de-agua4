@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HuellaHídrica — Calculadora ODS 6</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:   #0a1628;
+  --deep:  #0d3349;
+  --mid:   #1a6b8a;
+  --core:  #22a0bf;
+  --pale:  #a8dce8;
+  --foam:  #e4f6fa;
+  --sand:  #f7f3ed;
+  --gold:  #c9a84c;
+  --green: #2d7a5f;
+  --red:   #c0392b;
+  --amber: #d4860a;
+  --white: #ffffff;
+  --shadow: 0 20px 60px rgba(10,22,40,.12);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--sand);color:var(--ink);min-height:100vh;overflow-x:hidden;cursor:none}
+
+/* CURSOR */
+#cursor{width:10px;height:10px;background:var(--core);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .3s,height .3s,background .3s;mix-blend-mode:multiply}
+#cursor.big{width:36px;height:36px;background:var(--pale)}
+
+/* BG */
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35;animation:drift 18s ease-in-out infinite alternate}
+.b1{width:600px;height:600px;background:#b8e4ef;top:-200px;left:-150px;animation-delay:0s}
+.b2{width:400px;height:400px;background:#d4ede5;top:40%;right:-100px;animation-delay:-6s}
+.b3{width:350px;height:350px;background:#e8dcc8;bottom:-100px;left:30%;animation-delay:-12s}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.08)}}
+
+/* LAYOUT */
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 24px 80px}
+
+/* HERO */
+.hero{text-align:center;padding:72px 0 52px}
+.hero-tag{display:inline-flex;align-items:center;gap:7px;background:var(--deep);color:var(--pale);font-size:.72rem;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;border-radius:999px;padding:6px 16px;margin-bottom:28px}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,9vw,5.8rem);font-weight:700;line-height:.95;color:var(--deep);letter-spacing:-2px}
+.hero h1 em{font-style:italic;color:var(--mid)}
+.hero-sub{margin:20px auto 0;font-size:1rem;font-weight:300;color:#5a6a7a;max-width:460px;line-height:1.7}
+.hero-gota{font-size:3.5rem;margin-bottom:16px;display:block;animation:drop 2.8s ease-in-out infinite}
+@keyframes drop{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.05)}}
+
+/* PROGRESS */
+.progress-outer{height:3px;background:#dde5ea;border-radius:999px;margin-bottom:40px;overflow:hidden}
+.progress-inner{height:100%;background:linear-gradient(90deg,var(--mid),var(--core));border-radius:999px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.step-labels{display:flex;justify-content:space-between;margin-bottom:10px}
+.slbl{font-size:.7rem;font-weight:500;color:#9aacb8;letter-spacing:.5px;text-transform:uppercase;transition:color .3s}
+.slbl.done{color:var(--green)}
+.slbl.active{color:var(--mid);font-weight:600}
+
+/* CARD */
+.card{background:var(--white);border-radius:24px;box-shadow:var(--shadow);padding:44px 40px;border:1px solid rgba(34,160,191,.1);animation:appear .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes appear{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+.eyebrow{font-size:.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--core);margin-bottom:8px}
+.ctitle{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--deep);line-height:1.1;margin-bottom:6px}
+.csub{font-size:.88rem;color:#7a8fa0;margin-bottom:36px;line-height:1.5}
+.divider{width:40px;height:2px;background:var(--core);border-radius:999px;margin:16px 0 32px}
+
+/* PREGUNTAS */
+.qblock{margin-bottom:32px}
+.qlabel{font-size:.92rem;font-weight:500;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:10px;line-height:1.4}
+.qlabel .ico{width:34px;height:34px;border-radius:10px;background:var(--foam);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.hint{font-size:.78rem;color:#9aacb8;margin-bottom:12px;margin-left:44px}
+
+/* SLIDER */
+.slider-wrap{display:flex;align-items:center;gap:16px}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:5px;border-radius:999px;background:linear-gradient(90deg,var(--core) var(--pct,40%),#d8e8ee var(--pct,40%));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--white);border:3px solid var(--core);box-shadow:0 2px 10px rgba(34,160,191,.4);cursor:pointer;transition:transform .2s,box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 4px 16px rgba(34,160,191,.5)}
+.vpill{min-width:64px;text-align:center;background:var(--deep);color:var(--white);border-radius:12px;padding:6px 12px;font-size:.88rem;font-weight:600}
+
+/* OPCIONES */
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{padding:9px 20px;border-radius:12px;border:1.5px solid #d8e8ee;background:var(--white);font-family:'Outfit',sans-serif;font-size:.86rem;font-weight:500;color:#7a8fa0;cursor:pointer;transition:all .2s}
+.opt:hover{border-color:var(--core);color:var(--mid);background:var(--foam)}
+.opt.sel{background:var(--deep);border-color:var(--deep);color:var(--white);box-shadow:0 4px 14px rgba(13,51,73,.25)}
+
+/* NAV */
+.nav{display:flex;gap:12px;margin-top:40px}
+.btn-next{flex:1;background:var(--deep);color:var(--white);border:none;border-radius:14px;padding:17px 28px;font-family:'Outfit',sans-serif;font-size:.96rem;font-weight:600;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-next:hover{background:var(--mid);transform:translateY(-2px);box-shadow:0 10px 28px rgba(13,51,73,.3)}
+.btn-next svg{transition:transform .2s}
+.btn-next:hover svg{transform:translateX(4px)}
+.btn-back{background:transparent;color:#7a8fa0;border:1.5px solid #d8e8ee;border-radius:14px;padding:17px 20px;font-family:'Outfit',sans-serif;font-size:.96rem;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-back:hover{border-color:var(--mid);color:var(--mid)}
+
+/* RESULTADO HERO */
+.res-hero{text-align:center;padding:8px 0 36px}
+.res-num{font-family:'Cormorant Garamond',serif;font-size:clamp(5rem,16vw,9rem);font-weight:700;line-height:1;color:var(--deep);display:inline-block}
+.res-num .unit{font-size:.28em;font-weight:300;color:var(--mid);vertical-align:super;margin-left:4px;font-family:'Outfit',sans-serif;letter-spacing:1px}
+.res-day{font-size:.9rem;color:#9aacb8;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.estado{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:9px 22px;font-size:.86rem;font-weight:600;margin-top:14px;letter-spacing:.3px}
+
+/* GAUGE */
+.gauge-wrap{display:flex;justify-content:center;margin:8px 0 32px}
+.gauge{position:relative;width:220px}
+.gauge svg{width:220px;height:130px;overflow:visible}
+.g-bg{fill:none;stroke:#e4ecf0;stroke-width:14;stroke-linecap:round}
+.g-fill{fill:none;stroke-width:14;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)}
+.gauge-lbl{text-align:center;font-size:.65rem;color:#9aacb8;margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
+
+/* COMPARATIVA */
+.comp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:24px 0 36px}
+.ci{background:var(--foam);border-radius:16px;padding:18px 14px;text-align:center;border:1.5px solid transparent}
+.ci.hl{background:var(--deep);color:white}
+.cn{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:var(--deep);line-height:1}
+.ci.hl .cn{color:var(--pale)}
+.cl{font-size:.72rem;color:#8aa0af;margin-top:4px;letter-spacing:.3px;text-transform:uppercase}
+.ci.hl .cl{color:var(--pale);opacity:.7}
+
+/* DESGLOSE */
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--deep);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:#e4ecf0}
+.drow{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #f0f5f7}
+.drow:last-child{border-bottom:none}
+.dico{width:38px;height:38px;border-radius:12px;background:var(--foam);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
+.dinfo{flex:1;min-width:0}
+.dname{font-size:.88rem;font-weight:500;color:var(--ink)}
+.dbar-out{height:6px;background:#e8f2f5;border-radius:999px;margin-top:6px;overflow:hidden}
+.dbar-in{height:100%;border-radius:999px;background:var(--core);transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.dbar-in.hot{background:linear-gradient(90deg,var(--amber),var(--red))}
+.dlitros{font-size:.86rem;font-weight:600;color:var(--deep);min-width:52px;text-align:right}
+
+/* CONSEJO */
+.cj-grid{display:flex;flex-direction:column;gap:14px}
+.cj{border-radius:18px;padding:22px 22px 22px 20px;display:flex;gap:18px;align-items:flex-start;border-left:4px solid var(--core);background:var(--white);box-shadow:0 4px 18px rgba(10,22,40,.06);animation:appear .5s cubic-bezier(.22,1,.36,1) both;transition:transform .2s,box-shadow .2s}
+.cj:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(10,22,40,.1)}
+.cj.alto{border-color:var(--red)}
+.cj.medio{border-color:var(--amber)}
+.cj.bajo{border-color:var(--green)}
+.cj:nth-child(1){animation-delay:.05s}.cj:nth-child(2){animation-delay:.12s}.cj:nth-child(3){animation-delay:.19s}.cj:nth-child(4){animation-delay:.26s}.cj:nth-child(5){animation-delay:.33s}
+.cj-ico{width:46px;height:46px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.cj.alto .cj-ico{background:#fdecea}.cj.medio .cj-ico{background:#fdf3e3}.cj.bajo .cj-ico{background:#e6f4ef}
+.cj:not(.alto):not(.medio):not(.bajo) .cj-ico{background:var(--foam)}
+.cj-tag{font-size:.65rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:5px}
+.cj.alto .cj-tag{color:var(--red)}.cj.medio .cj-tag{color:var(--amber)}.cj.bajo .cj-tag{color:var(--green)}
+.cj:not(.alto):not(.medio):not(.bajo) .cj-tag{color:var(--mid)}
+.cj-txt{font-size:.9rem;line-height:1.65;color:#3a4a58}
+.cj-txt strong{color:var(--deep);font-weight:600}
+.cj-ahorro{display:inline-flex;align-items:center;gap:5px;margin-top:10px;background:var(--foam);border-radius:8px;padding:5px 12px;font-size:.78rem;font-weight:600;color:var(--mid)}
+
+/* DATO */
+.dato{background:linear-gradient(135deg,var(--deep),var(--mid));border-radius:20px;padding:28px;color:var(--white);margin:32px 0;display:flex;gap:18px;align-items:flex-start;position:relative;overflow:hidden}
+.dato::before{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
+.dato-ico{font-size:2rem;flex-shrink:0}
+.dato-lbl{font-size:.65rem;letter-spacing:1.8px;text-transform:uppercase;color:var(--pale);margin-bottom:6px}
+.dato-txt{font-size:.92rem;line-height:1.65;color:rgba(255,255,255,.88)}
+.dato-txt strong{color:var(--pale)}
+
+/* RESET */
+.btn-reset{width:100%;margin-top:12px;background:transparent;color:var(--mid);border:1.5px solid var(--pale);border-radius:14px;padding:15px;font-family:'Outfit',sans-serif;font-size:.92rem;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-reset:hover{background:var(--foam);border-color:var(--mid);color:var(--deep)}
+
+footer{text-align:center;padding:20px 0 10px;font-size:.75rem;color:#9aacb8;letter-spacing:.3px}
+
+@media(max-width:520px){
+  .card{padding:30px 20px}
+  .comp-grid{grid-template-columns:1fr 1fr}
+  .comp-grid .ci:last-child{grid-column:span 2}
+}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="hero-gota">💧</span>
+    <div class="hero-tag">🌍 ODS 6 · Agua limpia y saneamiento</div>
+    <h1>Huella<br><em>Hídrica</em></h1>
+    <p class="hero-sub">Descubre cuánta agua consumes cada día, dónde la derrochas y cómo puedes reducir tu impacto con cambios concretos.</p>
+  </header>
+
+  <div class="step-labels" id="stepLabels"></div>
+  <div class="progress-outer"><div class="progress-inner" id="pbar" style="width:0%"></div></div>
+  <div id="app"></div>
+</div>
+
+<footer>Proyecto educativo ODS 6 · Datos estimados a efectos informativos · España</footer>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px'});
+document.addEventListener('mouseover',e=>{e.target.closest('button,input,.opt,a')?cur.classList.add('big'):cur.classList.remove('big')});
+
+// ══ DATOS ══
+const PASOS=[
+  {
+    ey:"Paso 1 de 4",ti:"Higiene personal",su:"La ducha y la bañera concentran el mayor consumo del hogar.",
+    qs:[
+      {id:"ducha_min",t:"range",em:"🚿",tx:"¿Cuántos minutos dura tu ducha habitualmente?",mn:1,mx:30,vl:8,un:"min",hi:"La media en España ronda los 8-10 minutos."},
+      {id:"banera",t:"opts",em:"🛁",tx:"¿Con qué frecuencia usas la bañera?",op:["Nunca","1 vez/semana","3 o más/semana"],vv:[0,21,64]},
+      {id:"dientes",t:"opts",em:"🪥",tx:"Al lavarte los dientes, ¿cierras el grifo mientras te enjabonas?",op:["Siempre lo cierro","A veces lo cierro","Nunca lo cierro"],vv:[0.5,3,6]},
+    ]
+  },
+  {
+    ey:"Paso 2 de 4",ti:"Aseo y sanitarios",su:"El inodoro puede representar hasta el 30% del consumo doméstico diario.",
+    qs:[
+      {id:"inodoro",t:"range",em:"🚽",tx:"¿Cuántas veces utilizas el inodoro al día?",mn:1,mx:12,vl:5,un:"veces",hi:"La media está entre 4 y 7 veces al día."},
+      {id:"lavamanos",t:"range",em:"🤲",tx:"¿Cuántas veces te lavas las manos al día?",mn:1,mx:20,vl:8,un:"veces",hi:"Los expertos recomiendan al menos 6-8 veces diarias."},
+      {id:"cisterna",t:"opts",em:"🔧",tx:"¿Qué tipo de cisterna tienes?",op:["Doble pulsador (ahorro)","Cisterna antigua (>10 años)","No lo sé"],vv:[5,10,8]},
+    ]
+  },
+  {
+    ey:"Paso 3 de 4",ti:"Cocina y alimentación",su:"Cocinar y limpiar generan un consumo invisible pero relevante.",
+    qs:[
+      {id:"platos",t:"opts",em:"🍽️",tx:"¿Cómo friegas los platos normalmente?",op:["Lavavajillas lleno","A mano (eficiente)","A mano (grifo abierto)"],vv:[12,15,38]},
+      {id:"cocinar",t:"range",em:"🍳",tx:"¿Cuántos litros usas para cocinar y beber al día?",mn:1,mx:12,vl:3,un:"L",hi:"Incluye hervir pasta, lavar verduras, hacer infusiones, etc."},
+      {id:"carne",t:"opts",em:"🥩",tx:"¿Con qué frecuencia consumes carne roja a la semana?",op:["Raramente","2-3 veces","5 o más veces"],vv:[10,40,90],hi:"Huella hídrica indirecta: producir 1 kg de ternera consume ~15.000 L de agua."},
+    ]
+  },
+  {
+    ey:"Paso 4 de 4",ti:"Ropa y jardín",su:"Electrodomésticos y espacios exteriores completan tu huella hídrica.",
+    qs:[
+      {id:"lavadora",t:"opts",em:"👕",tx:"¿Cuántas veces pones la lavadora a la semana?",op:["1 vez","2-3 veces","4 o más veces"],vv:[9,21,43]},
+      {id:"lav_carga",t:"opts",em:"📦",tx:"¿Sueles poner la lavadora con la carga completa?",op:["Siempre llena","A veces llena","Casi nunca llena"],vv:[0,8,18]},
+      {id:"jardin",t:"opts",em:"🌱",tx:"¿Riegas plantas o jardín?",op:["No tengo","~5 min/día","~15 min/día","30+ min/día"],vv:[0,50,150,300]},
+    ]
+  }
+];
+const SNMS=["Higiene","Sanitarios","Cocina","Jardín"];
+
+let stp=0,rsp={},enRes=false;
+PASOS.forEach(p=>p.qs.forEach(q=>{rsp[q.id]=q.t==='range'?q.vl:q.vv[0]}));
+
+// ══ CÁLCULO ══
+function calc(){
+  let tot=0;const dsg=[];
+  const duchL=(rsp.ducha_min||8)*9;
+  const banL=rsp.banera||0;
+  const dntL=(rsp.dientes||0.5)*3;
+  const indL=(rsp.inodoro||5)*(rsp.cisterna||8);
+  const mnsL=(rsp.lavamanos||8)*2;
+  const pltL=rsp.platos||12;
+  const cocL=rsp.cocinar||3;
+  const crL=rsp.carne||10;
+  const lavL=(rsp.lavadora||9)+(rsp.lav_carga||0);
+  const jarL=rsp.jardin||0;
+  const items=[
+    {e:'🚿',n:'Ducha',l:duchL},
+    {e:'🛁',n:'Bañera',l:banL,h:banL===0},
+    {e:'🪥',n:'Higiene dental',l:dntL},
+    {e:'🚽',n:'Inodoro',l:indL},
+    {e:'🤲',n:'Lavado de manos',l:mnsL},
+    {e:'🍽️',n:'Platos',l:pltL},
+    {e:'🍳',n:'Cocina y bebida',l:cocL},
+    {e:'🥩',n:'Huella hídrica (dieta)',l:crL},
+    {e:'👕',n:'Lavadora',l:lavL},
+    {e:'🌱',n:'Riego',l:jarL,h:jarL===0},
+  ];
+  items.forEach(i=>{if(!i.h){tot+=i.l;dsg.push(i)}});
+  return{tot:Math.round(tot),dsg};
+}
+
+// ══ ESTADO ══
+function getEst(n){
+  if(n<50)  return{t:'Consumo insuficiente',c:'#c0392b',bg:'#fdecea',e:'⚠️'};
+  if(n<=100)return{t:'Consumo eficiente',   c:'#2d7a5f',bg:'#e6f4ef',e:'🏆'};
+  if(n<=200)return{t:'Consumo moderado',    c:'#d4860a',bg:'#fdf3e3',e:'💡'};
+  if(n<=300)return{t:'Consumo elevado',     c:'#c0392b',bg:'#fdecea',e:'🚨'};
+  return{t:'Consumo muy alto',c:'#8b1a1a',bg:'#fde0de',e:'🔴'};
+}
+
+// ══ CONSEJOS ══
+function getConsejos(tot){
+  const cd=[];
+  const dM=rsp.ducha_min||8,bV=rsp.banera||0,dtV=rsp.dientes||0.5;
+  const inV=rsp.inodoro||5,ciV=rsp.cisterna||8,mnV=rsp.lavamanos||8;
+  const plV=rsp.platos||12,cocV=rsp.cocinar||3,crV=rsp.carne||10;
+  const laV=rsp.lavadora||9,lcV=rsp.lav_carga||0,jrV=rsp.jardin||0;
+
+  // DUCHA
+  if(dM>=20){
+    cd.push({p:10,lv:'alto',e:'🚿',tag:'Urgente · Ducha',
+      tx:`<strong>Tu ducha dura ${dM} minutos</strong>: es, con diferencia, tu mayor gasto del día (${dM*9} L). Reducirla a 5 minutos ahorraría <strong>${(dM-5)*9} litros al día</strong>, más de 50.000 L al año. Truco probado: pon una canción de 5 minutos como alarma en el baño. Cuando termine, sal.`,
+      ah:`Potencial ahorro: ~${(dM-5)*9} L/día`});
+  } else if(dM>=13){
+    cd.push({p:8,lv:'alto',e:'🚿',tag:'Importante · Ducha',
+      tx:`<strong>Duchas ${dM} minutos al día</strong>, bastante por encima de los 5-7 recomendados. Reducir 5 minutos te ahorraría <strong>45 litros diarios</strong>. Un truco eficaz: cierra el grifo mientras te enjabonas. También puedes instalar un cabezal de ducha de bajo caudal (4-6 L/min en lugar de 9) por menos de 15 €.`,
+      ah:`Potencial ahorro: ~45 L/día`});
+  } else if(dM>=7){
+    cd.push({p:5,lv:'medio',e:'🚿',tag:'Mejora posible · Ducha',
+      tx:`Tu ducha dura ${dM} minutos, cerca de la media española. <strong>Reducirla a 5 minutos</strong> ahorraría ${(dM-5)*9} L al día. Un reductor de caudal en el cabezal (≈10 €) puede rebajar el gasto un 40% sin perder sensación de presión.`,
+      ah:`Potencial ahorro: ~${(dM-5)*9} L/día`});
+  } else {
+    cd.push({p:1,lv:'bajo',e:'🚿',tag:'Excelente · Ducha',
+      tx:`<strong>Duchas solo ${dM} minutos: estás muy por debajo de la media.</strong> Este hábito equivale a ahorrar decenas de miles de litros al año respecto al ciudadano medio. Compártelo.`,ah:null});
+  }
+
+  // BAÑERA
+  if(bV===64){
+    cd.push({p:9,lv:'alto',e:'🛁',tag:'Urgente · Bañera',
+      tx:`<strong>Usas la bañera 3 veces por semana</strong>: cada baño consume entre 150 y 200 litros, frente a los 45-90 L de una ducha de 5-10 min. La diferencia diaria media es de <strong>43 litros</strong>. Sustituir dos de esas sesiones por ducha te ahorraría más de 300 litros a la semana sin ningún sacrificio real.`,
+      ah:`Potencial ahorro: ~43 L/día`});
+  } else if(bV===21){
+    cd.push({p:4,lv:'medio',e:'🛁',tag:'A mejorar · Bañera',
+      tx:`Usas la bañera una vez a la semana (≈21 L/día de media). Es un capricho tolerable, pero cambiarla por ducha te ahorraría más de 100 litros esa sesión. Si la mantienes, intenta no llenarla completamente: con la mitad del agua el baño es igual de reconfortante.`,ah:null});
+  }
+
+  // DIENTES
+  if(dtV===6){
+    cd.push({p:7,lv:'alto',e:'🪥',tag:'Importante · Higiene dental',
+      tx:`<strong>Dejar el grifo abierto al lavarse los dientes malgasta hasta 6 litros cada vez</strong>, lo que suma <strong>18 litros al día</strong> y más de 6.500 L al año. Cerrar el grifo mientras te enjabonas es el cambio más fácil, más rápido y más barato que puedes hacer hoy. Sin coste, sin esfuerzo.`,
+      ah:`Ahorro inmediato: ~16 L/día`});
+  } else if(dtV===3){
+    cd.push({p:3,lv:'medio',e:'🪥',tag:'Mejora posible · Higiene dental',
+      tx:`A veces dejas el grifo abierto al lavarte los dientes. <strong>Cerrarlo siempre</strong> te ahorraría hasta 9 litros diarios adicionales. Es un automatismo que se adquiere en menos de una semana si lo practicas conscientemente.`,
+      ah:`Potencial ahorro: ~9 L/día`});
+  } else {
+    cd.push({p:1,lv:'bajo',e:'🪥',tag:'Excelente · Higiene dental',
+      tx:`<strong>Cierras el grifo siempre: perfecto.</strong> Este hábito ahorra más de 5.000 litros al año. Si convives con más personas, recuérdales este truco: el impacto se multiplica.`,ah:null});
+  }
+
+  // INODORO + CISTERNA
+  if(ciV===10&&inV>=5){
+    cd.push({p:7,lv:'alto',e:'🚽',tag:'Importante · Inodoro',
+      tx:`<strong>Tu cisterna antigua gasta hasta 10 litros por descarga.</strong> Con ${inV} usos al día son ${inV*10} litros, frente a los ${inV*4} de un modelo moderno de doble pulsador. Cambiar la cisterna o colocar una bolsa de desplazamiento (≈5 €) dentro del depósito puede ahorrarte <strong>${Math.round(inV*6)} litros al día</strong>.`,
+      ah:`Potencial ahorro: ~${Math.round(inV*6)} L/día`});
+  } else if(ciV===10&&inV<5){
+    cd.push({p:4,lv:'medio',e:'🚽',tag:'A mejorar · Inodoro',
+      tx:`Tu cisterna es antigua y gasta 10 L por descarga. Aunque la usas pocas veces, considera sustituirla o añadir un dispositivo de desplazamiento. También revisa si hay fugas silenciosas: añade colorante al depósito y, si llega a la taza sin tirar de la cadena, tienes una fuga que puede desperdiciar hasta 200 L/día.`,ah:null});
+  } else if(ciV<=5){
+    cd.push({p:1,lv:'bajo',e:'🚽',tag:'Bien · Inodoro',
+      tx:`<strong>Tienes una cisterna de doble pulsador: excelente.</strong> Recuerda usar siempre la descarga corta (3 L) salvo cuando sea imprescindible la completa (6 L). Eso solo ya puede ahorrar 15-20 L/día adicionales.`,ah:null});
+  }
+
+  // LAVADO DE MANOS
+  if(mnV>=14){
+    cd.push({p:4,lv:'medio',e:'🤲',tag:'A tener en cuenta · Lavado de manos',
+      tx:`Te lavas las manos ${mnV} veces al día (≈${mnV*2} L). Es un hábito higiénico esencial que no debes sacrificar, pero puedes optimizarlo: <strong>abre el grifo solo a media presión</strong> y ciérralo mientras te enjabonas los 20 segundos recomendados. Así reduces el consumo sin perder eficacia.`,
+      ah:`Potencial ahorro: ~${Math.round(mnV*0.8)} L/día`});
+  }
+
+  // PLATOS
+  if(plV===38){
+    cd.push({p:8,lv:'alto',e:'🍽️',tag:'Importante · Platos',
+      tx:`<strong>Fregar con el grifo siempre abierto gasta hasta 38 litros al día</strong>, más del triple que un lavavajillas lleno (≈12 L). Sin lavavajillas, usa el método de los dos cubos: uno con agua jabonosa para lavar y otro con agua limpia para aclarar. Reducirás el consumo a menos de 15 litros y limpiarás igual de bien.`,
+      ah:`Potencial ahorro: ~23 L/día`});
+  } else if(plV===15){
+    cd.push({p:2,lv:'bajo',e:'🍽️',tag:'Bien · Platos',
+      tx:`Friegas a mano de forma eficiente. Si alguna vez contemplas comprar un lavavajillas, los modelos A+++ actuales gastan incluso menos agua que fregar a mano (≈10-12 L/ciclo) y consumen menos energía. Evita el prelavado a mano antes de meterlos: los detergentes modernos no lo necesitan.`,ah:null});
+  } else {
+    cd.push({p:1,lv:'bajo',e:'🍽️',tag:'Excelente · Platos',
+      tx:`<strong>El lavavajillas lleno es la opción más eficiente.</strong> Asegúrate siempre de ponerlo a plena carga y usa el programa eco (50°C). Un ciclo completo gasta entre 10 y 12 litros, menos que fregar a mano con el grifo abierto durante apenas 5 minutos.`,ah:null});
+  }
+
+  // DIETA
+  if(crV===90){
+    cd.push({p:8,lv:'alto',e:'🥩',tag:'Impacto alto · Dieta',
+      tx:`<strong>Comer carne roja 5 o más veces por semana tiene una huella hídrica indirecta enorme.</strong> Producir 1 kg de ternera requiere ~15.000 litros de agua. Sustituir dos raciones semanales por legumbres (que necesitan solo ~4.000 L/kg) puede reducir tu huella hídrica total en <strong>cientos de litros al día</strong>, sin necesidad de ser vegetariano.`,
+      ah:`Huella indirecta: ~90 L/día estimados`});
+  } else if(crV===40){
+    cd.push({p:5,lv:'medio',e:'🥩',tag:'A considerar · Dieta',
+      tx:`Consumir carne roja 2-3 veces por semana tiene un impacto hídrico indirecto relevante. <strong>Incorporar un día a la semana sin carne</strong> puede ahorrarte el equivalente hídrico de cientos de duchas al año. Las legumbres, el pescado y los huevos son alternativas nutritivas con huella hídrica entre 5 y 10 veces menor.`,
+      ah:`Huella indirecta: ~40 L/día estimados`});
+  } else {
+    cd.push({p:1,lv:'bajo',e:'🥩',tag:'Bien · Dieta',
+      tx:`<strong>Tu dieta baja en carne roja tiene una huella hídrica indirecta reducida.</strong> Las legumbres, los huevos y las proteínas vegetales necesitan una fracción del agua que requiere la ganadería intensiva. Es uno de los cambios con mayor impacto ambiental per cápita.`,ah:null});
+  }
+
+  // LAVADORA
+  if(laV===43||lcV===18){
+    cd.push({p:8,lv:'alto',e:'👕',tag:'Importante · Lavadora',
+      tx:`<strong>Usas la lavadora con mucha frecuencia y con poca carga</strong>: puedes estar gastando hasta ${laV+lcV} L/día de media en ropa. Reducir a 2 lavados semanales bien llenos y usar el programa eco (30-40°C) puede ahorrarte <strong>más de 100 litros semanales</strong> y prolongar la vida de la ropa al mismo tiempo.`,
+      ah:`Potencial ahorro: ~${Math.round((laV+lcV)*0.4)} L/día`});
+  } else if(laV===21&&lcV===0){
+    cd.push({p:2,lv:'bajo',e:'👕',tag:'Bien · Lavadora',
+      tx:`Usas la lavadora 2-3 veces por semana con la carga completa: <strong>un buen hábito</strong>. Asegúrate de usar siempre el programa eco y de no superar 1.200 rpm en el centrifugado para alargar la vida de la ropa. El detergente en dosis justa (no más de lo indicado) también reduce la contaminación del agua residual.`,ah:null});
+  } else if(laV===9&&lcV===0){
+    cd.push({p:1,lv:'bajo',e:'👕',tag:'Excelente · Lavadora',
+      tx:`<strong>Solo un lavado completo a la semana: perfecto.</strong> Es la frecuencia más eficiente. Recuerda usar detergente en la dosis justa (el exceso no lava mejor y contamina el agua residual) y prioriza el ciclo eco siempre que puedas.`,ah:null});
+  }
+
+  // JARDÍN
+  if(jrV===300){
+    cd.push({p:10,lv:'alto',e:'🌱',tag:'Urgente · Riego',
+      tx:`<strong>Riegas más de 30 minutos al día: es tu segundo mayor gasto</strong> (≈300 L). Tres medidas de gran impacto: (1) riega siempre al amanecer o al atardecer para reducir la evaporación hasta un 50%; (2) instala riego por goteo (ahorra un 70% frente al aspersor); (3) replanta con especies autóctonas de la Península adaptadas a la sequía, que prácticamente no necesitan riego adicional.`,
+      ah:`Potencial ahorro: ~150 L/día`});
+  } else if(jrV===150){
+    cd.push({p:6,lv:'medio',e:'🌱',tag:'A mejorar · Riego',
+      tx:`Riegas unos 15 minutos al día (≈150 L). <strong>Riega profundo y con menos frecuencia</strong>: las raíces crecen hacia abajo buscando la humedad y la planta aguanta mejor el calor. Regar 2-3 veces por semana abundantemente es más eficiente que hacerlo todos los días un poco.`,
+      ah:`Potencial ahorro: ~60 L/día`});
+  } else if(jrV===50){
+    cd.push({p:2,lv:'bajo',e:'🌱',tag:'Bien · Riego',
+      tx:`Riegas moderadamente (≈50 L/día). Para optimizarlo aún más: coloca un plato debajo de las macetas para reutilizar el agua que drena, y riega con el agua de cocer verduras (fría y sin sal): los nutrientes disueltos son un abono natural gratuito.`,ah:null});
+  }
+
+  // GLOBAL
+  if(tot>300){
+    cd.push({p:9,lv:'alto',e:'💧',tag:'Global · Consumo total',
+      tx:`<strong>Tu consumo supera los 300 L/día</strong>, más del doble de la media europea. Para contextualizarlo: 2.200 millones de personas en el mundo no tienen acceso a agua potable segura. Aplicar los cambios marcados como "Urgente" en esta lista podría reducir tu huella más de un 40% en tan solo una semana.`,ah:null});
+  } else if(tot>185){
+    cd.push({p:5,lv:'medio',e:'💧',tag:'Global · Consumo total',
+      tx:`Estás por encima de la media mundial (185 L). <strong>Con 2 o 3 cambios de los señalados arriba</strong> podrías bajar a la franja eficiente (50-100 L) sin grandes sacrificios. Empieza por los de mayor ahorro potencial y ve incorporándolos uno a uno.`,ah:null});
+  } else if(tot>=50){
+    cd.push({p:1,lv:'bajo',e:'🌍',tag:'Global · Consumo total',
+      tx:`<strong>¡Tu huella hídrica directa es eficiente!</strong> Estás por debajo de la media mundial. Si cada persona en España redujera solo 30 L/día, se ahorrarían más de 1.400 millones de litros diarios a nivel nacional. Comparte esta herramienta y multiplica el impacto.`,ah:null});
+  }
+
+  cd.sort((a,b)=>b.p-a.p);
+  const seen=new Set();
+  return cd.filter(c=>{if(seen.has(c.e))return false;seen.add(c.e);return true}).slice(0,5);
+}
+
+// ══ DATO CURIOSO ══
+function getDato(tot){
+  const d=[
+    {ic:'🌍',tx:`Con <strong>${tot} litros al día</strong>, en un año consumes <strong>${Math.round(tot*365).toLocaleString('es-ES')} litros</strong>. Una piscina olímpica contiene 2,5 millones de litros. Necesitarías <strong>${Math.round(tot*365/2500000*100)/100} piscinas</strong> para almacenar tu consumo anual.`},
+    {ic:'🚰',tx:`Según la ONU, el mínimo vital para beber, cocinar e higiene básica es <strong>50 litros por persona y día</strong>. Unos 785 millones de personas en el mundo no llegan a esa cifra: viven con menos agua al día de lo que muchos usan en una ducha.`},
+    {ic:'👕',tx:`Producir una sola camiseta de algodón requiere <strong>2.700 litros de agua</strong>: el equivalente a lo que bebe una persona durante 2,5 años. La industria textil es la segunda más contaminante del agua a nivel mundial, después de la agricultura.`},
+    {ic:'🥑',tx:`Un aguacate necesita <strong>320 litros de agua</strong> para crecer. Una hamburguesa de ternera, <strong>2.400 litros</strong>. Lo que comemos tiene, en muchos casos, más huella hídrica que todo el agua que usamos en casa durante una semana.`},
+  ];
+  return d[Math.floor(tot/80)%d.length];
+}
+
+// ══ PROGRESO ══
+function updProgress(){
+  const pct=enRes?100:(stp/PASOS.length)*100;
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('stepLabels').innerHTML=SNMS.map((n,i)=>{
+    const c=enRes?'done':i<stp?'done':i===stp?'active':'';
+    return`<span class="slbl ${c}">${n}</span>`;
+  }).join('');
+}
+
+// ══ RENDER PASO ══
+function renderPaso(){
+  enRes=false;updProgress();
+  const p=PASOS[stp];
+  let h=`<div class="card">
+    <div class="eyebrow">${p.ey}</div>
+    <h2 class="ctitle">${p.ti}</h2>
+    <p class="csub">${p.su}</p>
+    <div class="divider"></div>`;
+
+  p.qs.forEach(q=>{
+    h+=`<div class="qblock"><div class="qlabel"><span class="ico">${q.em}</span><span>${q.tx}</span></div>`;
+    if(q.hi)h+=`<p class="hint">${q.hi}</p>`;
+    if(q.t==='range'){
+      const pct=((rsp[q.id]-q.mn)/(q.mx-q.mn))*100;
+      h+=`<div class="slider-wrap">
+        <input type="range" min="${q.mn}" max="${q.mx}" value="${rsp[q.id]}" style="--pct:${pct}%"
+          oninput="rsp['${q.id}']=parseInt(this.value);document.getElementById('vp_${q.id}').textContent=this.value+' ${q.un}';const p=((this.value-${q.mn})/(${q.mx}-${q.mn}))*100;this.style.setProperty('--pct',p+'%')">
+        <div class="vpill" id="vp_${q.id}">${rsp[q.id]} ${q.un}</div>
+      </div>`;
+    }else{
+      h+=`<div class="opts">`;
+      q.op.forEach((op,i)=>{
+        const s=rsp[q.id]===q.vv[i]?' sel':'';
+        h+=`<button class="opt${s}" onclick="selOpt('${q.id}',${q.vv[i]},this)">${op}</button>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  });
+
+  h+=`<div class="nav">`;
+  if(stp>0)h+=`<button class="btn-back" onclick="goStp(${stp-1})">← Atrás</button>`;
+  if(stp<PASOS.length-1){
+    h+=`<button class="btn-next" onclick="goStp(${stp+1})">Siguiente <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  }else{
+    h+=`<button class="btn-next" onclick="mostrarRes()">Ver mi resultado 💧</button>`;
+  }
+  h+=`</div></div>`;
+  document.getElementById('app').innerHTML=h;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function selOpt(id,val,btn){
+  rsp[id]=val;
+  btn.closest('.opts').querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function goStp(n){stp=n;renderPaso()}
+
+// ══ RENDER RESULTADO ══
+function mostrarRes(){
+  enRes=true;updProgress();
+  const{tot,dsg}=calc();
+  const est=getEst(tot);
+  const cjs=getConsejos(tot);
+  const dat=getDato(tot);
+  const maxL=Math.max(...dsg.map(d=>d.l));
+  const gPct=Math.min(tot/350,1);
+  const gColor=tot<=100?'#2d7a5f':tot<=200?'#d4860a':'#c0392b';
+
+  const dsgH=dsg.sort((a,b)=>b.l-a.l).map(d=>{
+    const pct=Math.round((d.l/maxL)*100);
+    const hot=d.l>(tot*0.25)?' hot':'';
+    return`<div class="drow"><div class="dico">${d.e}</div><div class="dinfo"><div class="dname">${d.n}</div><div class="dbar-out"><div class="dbar-in${hot}" style="width:${pct}%"></div></div></div><div class="dlitros">${d.l} L</div></div>`;
+  }).join('');
+
+  const cjH=cjs.map(c=>`
+    <div class="cj ${c.lv}">
+      <div class="cj-ico">${c.e}</div>
+      <div>
+        <div class="cj-tag">${c.tag}</div>
+        <div class="cj-txt">${c.tx}</div>
+        ${c.ah?`<div class="cj-ahorro">💧 ${c.ah}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('app').innerHTML=`
+  <div class="card">
+    <div class="res-hero">
+      <div class="eyebrow">Tu resultado</div>
+      <div class="res-num">${tot}<span class="unit">L</span></div>
+      <div class="res-day">litros por día</div>
+      <div class="estado" style="background:${est.bg};color:${est.c}">${est.e} ${est.t}</div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge">
+        <svg viewBox="0 0 220 120">
+          <path class="g-bg" d="M 20 110 A 90 90 0 0 1 200 110"/>
+          <path class="g-fill" id="gf" d="M 20 110 A 90 90 0 0 1 200 110" stroke="${gColor}"/>
+          <text x="110" y="95" text-anchor="middle" fill="${gColor}" font-family="Cormorant Garamond,serif" font-size="26" font-weight="700">${tot}</text>
+          <text x="110" y="113" text-anchor="middle" fill="#9aacb8" font-family="Outfit,sans-serif" font-size="9" letter-spacing="1">LITROS / DÍA</text>
+        </svg>
+        <div class="gauge-lbl">Eficiente (50–100 L) · Media mundial (185 L) · Alto (300+ L)</div>
+      </div>
+    </div>
+
+    <div class="comp-grid">
+      <div class="ci hl"><div class="cn">${tot} L</div><div class="cl">Tu consumo</div></div>
+      <div class="ci"><div class="cn">185 L</div><div class="cl">Media mundial</div></div>
+      <div class="ci"><div class="cn">50 L</div><div class="cl">Mínimo ONU</div></div>
+    </div>
+
+    <div class="sec-title">Desglose por actividad</div>
+    ${dsgH}
+
+    <div class="dato" style="margin-top:32px">
+      <div class="dato-ico">${dat.ic}</div>
+      <div><div class="dato-lbl">¿Sabías que…?</div><div class="dato-txt">${dat.tx}</div></div>
+    </div>
+
+    <div class="sec-title" style="margin-top:8px">Tus recomendaciones personalizadas</div>
+    <div class="cj-grid">${cjH}</div>
+
+    <button class="btn-reset" onclick="reiniciar()">🔄 Recalcular con nuevos datos</button>
+  </div>`;
+
+  setTimeout(()=>{const f=document.getElementById('gf');if(f)f.style.strokeDashoffset=String(283-283*gPct)},200);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function reiniciar(){
+  stp=0;enRes=false;
+  PASOS.forEach(p=>p.qs.forEach(q=>{rsp[q.id]=q.t==='range'?q.vl:q.vv[0]}));
+  renderPaso();
+}
+
+renderPaso();
+</script>
+</body>
+</html>
